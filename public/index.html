@@ -7,9 +7,12 @@
 <style type="text/css">
 html,
 body {
-    border: none;
-    padding: 0;
     margin: 0;
+    padding: 0;
+    outline: 0;
+    border: 0;
+    width: 100%;
+    height: 100%;
     background: #FFFFFF;
     color: #202020;
 }
@@ -17,10 +20,75 @@ body {
 body {
     text-align: center;
     font-family: "Roboto", sans-serif;
+    display: flex;
+    flex-direction: column;
 }
 
-h1 {
+#top-bar {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    white-space: nowrap;
+    background: #fff;
+    width: 100%;
+    height: 54px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    box-shadow: 0 0 8px 0 rgba(0,0,0,0.12);
+    z-index: 1;
+}
+
+#top-bar a {
     color: #404040;
+    text-decoration: none;
+}
+
+#top-bar a:hover,
+#top-bar a:active {
+    color: #000;
+}
+
+#top-bar div.logo {
+    display: inline-block;
+    height: 30px;
+}
+
+#top-bar div.logo,
+#top-bar div.filler {
+    width: 210px;
+}
+
+
+@media all and (max-width:640px) {
+    #top-bar div.filler {
+        display: none;
+    }
+}
+
+#top-bar .logo a {
+    display: inline-block;
+    height: 100%;
+    width: 100%;
+    max-width: 180px;
+    background-image: url(logo.png);
+    background-size: contain;
+    background-position: left center;
+    background-repeat: no-repeat;
+}
+
+#top-bar h1 {
+    margin: 0;
+    padding: 0;
+    line-height: 1;
+    display: inline;
+    font-size: 1.4em;
+}
+
+#main {
+    margin-top: 64px;
+    padding-top: 1.6em;
+    flex: 1 1 0;
 }
 
 #startStopBtn {
@@ -153,100 +221,137 @@ div.testGroup {
     transition: width 2s;
     background-color: #90BBFF;
 }
+
+footer {
+    background: #363636;
+    color: #EDEDED;
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+}
+
+footer div {
+    padding: 15px;
+}
+
+footer .center {
+    text-align: center;
+}
+
+footer a {
+    color: #EDEDED;
+    cursor: pointer;
+    text-decoration: none;
+}
 </style>
 <script type="text/javascript">
 function I(id){return document.getElementById(id);}
 
 // see doc.md
 var params = {
-	url_dl: "dl",
-	url_ul: "ul",
-	url_ping: "ping",
-	url_getIp: "ip",
-	getIp_ispInfo: false
+    url_dl: "dl",
+    url_ul: "ul",
+    url_ping: "ping",
+    url_getIp: "ip",
+    getIp_ispInfo: false
 };
 
 var w=null; //speedtest worker
 function startStop(){
-	if(w!=null){
-		//speedtest is running, abort
-		w.postMessage('abort');
-		w=null;
-		I("startStopBtn").className="";
-		initUI();
-	}else{
-		//test is not running, begin
-		w=new Worker('speedtest_worker.min.js');
-		w.postMessage('start '+JSON.stringify(params));
-		I("startStopBtn").className="running";
-		w.onmessage=function(e){
-			var data=JSON.parse(e.data);
-			var status=data.testState;
-			if(status>=4){
-				//test completed
-				I("startStopBtn").className="";
-				w=null;
-			}
-			I("ip").textContent=data.clientIp;
-			I("dlText").textContent=(status==1&&data.dlStatus==0)?"...":data.dlStatus;
-			I("ulText").textContent=(status==3&&data.ulStatus==0)?"...":data.ulStatus;
-			I("pingText").textContent=data.pingStatus;
-			I("jitText").textContent=data.jitterStatus;
-			var prog=(Number(data.dlProgress)*2+Number(data.ulProgress)*2+Number(data.pingProgress))/5;
-			I("progress").style.width=(100*prog)+"%";
-		};
-	}
+    if(w!=null){
+        //speedtest is running, abort
+        w.postMessage('abort');
+        w=null;
+        I("startStopBtn").className="";
+        initUI();
+    }else{
+        //test is not running, begin
+        w=new Worker('speedtest_worker.min.js');
+        w.postMessage('start '+JSON.stringify(params));
+        I("startStopBtn").className="running";
+        w.onmessage=function(e){
+            var data=JSON.parse(e.data);
+            var status=data.testState;
+            if(status>=4){
+                //test completed
+                I("startStopBtn").className="";
+                w=null;
+            }
+            I("ip").textContent=data.clientIp;
+            I("dlText").textContent=(status==1&&data.dlStatus==0)?"...":data.dlStatus;
+            I("ulText").textContent=(status==3&&data.ulStatus==0)?"...":data.ulStatus;
+            I("pingText").textContent=data.pingStatus;
+            I("jitText").textContent=data.jitterStatus;
+            var prog=(Number(data.dlProgress)*2+Number(data.ulProgress)*2+Number(data.pingProgress))/5;
+            I("progress").style.width=(100*prog)+"%";
+        };
+    }
 }
 //poll the status from the worker every 200ms (this will also update the UI)
 setInterval(function(){
-	if(w) w.postMessage('status');
+    if(w) w.postMessage('status');
 },200);
 //function to (re)initialize UI
 function initUI(){
-	I("dlText").textContent="";
-	I("ulText").textContent="";
-	I("pingText").textContent="";
-	I("jitText").textContent="";
-	I("ip").textContent="";
-	I("progress").style.width="";
+    I("dlText").textContent="";
+    I("ulText").textContent="";
+    I("pingText").textContent="";
+    I("jitText").textContent="";
+    I("ip").textContent="";
+    I("progress").style.width="";
 }
 
 </script>
 </head>
 <body>
-<h1>StuStaNet Speedtest</h1>
-<div id="startStopBtn" onclick="startStop()"></div>
-<div id="test">
-	<div id="progressBar"><div id="progress"></div></div>
-	<div class="testGroup">
-		<div class="testArea">
-			<div class="testName">Download</div>
-			<div id="dlText" class="meterText"></div>
-			<div class="unit">Mbps</div>
-		</div>
-		<div class="testArea">
-			<div class="testName">Upload</div>
-			<div id="ulText" class="meterText"></div>
-			<div class="unit">Mbps</div>
-		</div>
-	</div>
-	<div class="testGroup">
-		<div class="testArea">
-			<div class="testName">Ping</div>
-			<div id="pingText" class="meterText"></div>
-			<div class="unit">ms</div>
-		</div>
-		<div class="testArea">
-			<div class="testName">Jitter</div>
-			<div id="jitText" class="meterText"></div>
-			<div class="unit">ms</div>
-		</div>
-	</div>
-	<div id="ipArea">
-		IP Address: <span id="ip"></span>
-	</div>
-</div>
-<a href="https://gitlab.stusta.de/stustanet/speedtest">Source code</a>
+<nav id="top-bar">
+    <div class="logo"><a href="https://stustanet.de/" title="To Homepage"></a></div>
+    <a href="/"><h1>StuStaNet Speedtest</h1></a>
+    <div class="filler"></div>
+</nav>
+<article id="main">
+    <div id="startStopBtn" onclick="startStop()"></div>
+    <div id="test">
+        <div id="progressBar"><div id="progress"></div></div>
+        <div class="testGroup">
+            <div class="testArea">
+                <div class="testName">Download</div>
+                <div id="dlText" class="meterText"></div>
+                <div class="unit">Mbps</div>
+            </div>
+            <div class="testArea">
+                <div class="testName">Upload</div>
+                <div id="ulText" class="meterText"></div>
+                <div class="unit">Mbps</div>
+            </div>
+        </div>
+        <div class="testGroup">
+            <div class="testArea">
+                <div class="testName">Ping</div>
+                <div id="pingText" class="meterText"></div>
+                <div class="unit">ms</div>
+            </div>
+            <div class="testArea">
+                <div class="testName">Jitter</div>
+                <div id="jitText" class="meterText"></div>
+                <div class="unit">ms</div>
+            </div>
+        </div>
+        <div id="ipArea">
+            IP Address: <span id="ip"></span>
+        </div>
+    </div>
+</article>
+<footer>
+    <div>
+        <a href="https://stustanet.de/impressum">Imprint</a>
+    </div>
+    <div>
+        <a href="https://gitlab.stusta.de/stustanet/speedtest">Source code</a>
+    </div>
+</footer>
 <script type="text/javascript">initUI();</script>
 </body>
 </html>
