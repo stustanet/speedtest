@@ -128,9 +128,13 @@ body {
     content: "Abort";
 }
 
-#test {
+.test {
     margin-top: 2em;
-    margin-bottom: 12em;
+    margin-bottom: 6em;
+}
+
+div.testGroup {
+    display: inline-block;
 }
 
 div.testArea {
@@ -159,16 +163,16 @@ div.meterText {
     z-index: 9;
 }
 
-#dlText {
+.dlText {
     color: #6060AA;
 }
 
-#ulText {
+.ulText {
     color: #309030;
 }
 
-#pingText,
-#jitText {
+.pingText,
+.jitText {
     color: #AA6060;
 }
 
@@ -183,10 +187,6 @@ div.unit {
     left: 0;
     width: 100%;
     z-index: 9;
-}
-
-div.testGroup {
-    display: inline-block;
 }
 
 @media all and (max-width:65em) {
@@ -205,7 +205,7 @@ div.testGroup {
     }
 }
 
-#progressBar {
+.progressBar {
     width: 90%;
     height: 0.3em;
     background-color: #EEEEEE;
@@ -215,7 +215,7 @@ div.testGroup {
     margin-bottom: 2em;
 }
 
-#progress {
+.progress {
     position: absolute;
     top: 0;
     left: 0;
@@ -253,15 +253,30 @@ footer a {
 function I(id){return document.getElementById(id);}
 
 // see doc.md
+
+var server1 = "http://extern.speedtest.stustanet.de/" //extern
+var server2 = "http://intern.speedtest.stustanet.de/" //intern
 var params = {
-    url_dl: "dl",
-    url_ul: "ul",
-    url_ping: "ping",
-    url_getIp: "ip",
-    getIp_ispInfo: false
-};
+    1: {
+        url_dl: server1 + "dl",
+        url_ul: server1 + "ul",
+        url_ping: server1 + "ping",
+        url_getIp: server1 + "ip",
+        getIp_ispInfo: false
+    },
+    2: {
+        url_dl: server2 + "dl",
+        url_ul: server2 + "ul",
+        url_ping: server2 + "ping",
+        url_getIp: server2 + "ip",
+        getIp_ispInfo: false
+    }
+}
 
 var w=null; //speedtest worker
+var nrTests = 2;
+var testServer = 1;
+var serverChanged = false;
 function startStop(){
     if(w!=null){
         //speedtest is running, abort
@@ -271,39 +286,57 @@ function startStop(){
         initUI();
     }else{
         //test is not running, begin
-        w=new Worker('speedtest_worker.min.js');
-        w.postMessage('start '+JSON.stringify(params));
-        I("startStopBtn").className="running";
-        w.onmessage=function(e){
-            var data=JSON.parse(e.data);
-            var status=data.testState;
-            if(status>=4){
-                //test completed
-                I("startStopBtn").className="";
-                w=null;
-            }
-            I("ip").textContent=data.clientIp;
-            I("dlText").textContent=(status==1&&data.dlStatus==0)?"...":data.dlStatus;
-            I("ulText").textContent=(status==3&&data.ulStatus==0)?"...":data.ulStatus;
-            I("pingText").textContent=data.pingStatus;
-            I("jitText").textContent=data.jitterStatus;
-            var prog=(Number(data.dlProgress)*2+Number(data.ulProgress)*2+Number(data.pingProgress))/5;
-            I("progress").style.width=(100*prog)+"%";
-        };
+        testServer = 1;
+        setupWorker();
     }
 }
+
+
+function setupWorker() {
+    console.log("setup Test " + testServer)
+    w = new Worker('speedtest_worker.min.js');
+    w.postMessage('start ' + JSON.stringify(params[testServer]));
+    I("startStopBtn").className = "running";
+    w.onmessage = function (e) {
+        var data = JSON.parse(e.data);
+        var status = data.testState;
+        if (status >= 4) {
+            //test completed
+            console.log("Completed Test");
+            I("startStopBtn").className = "";
+            w = null;
+            serverChanged = true;
+        }
+        I("ip" + testServer).textContent = data.clientIp;
+        I("dlText" + testServer).textContent = (status == 1 && data.dlStatus == 0) ? "..." : data.dlStatus;
+        I("ulText" + testServer).textContent = (status == 3 && data.ulStatus == 0) ? "..." : data.ulStatus;
+        I("pingText" + testServer).textContent = data.pingStatus;
+        I("jitText" + testServer).textContent = data.jitterStatus;
+        var prog = (Number(data.dlProgress) * 2 + Number(data.ulProgress) * 2 + Number(data.pingProgress)) / 5;
+        I("progress" + testServer).style.width = (100 * prog) + "%";
+    };
+}
+
 //poll the status from the worker every 200ms (this will also update the UI)
 setInterval(function(){
     if(w) w.postMessage('status');
+    else if (serverChanged) {
+        //if one test finished, start the next test
+        testServer = testServer + 1;
+        if (testServer <= nrTests) setupWorker();
+        serverChanged = false;
+    }
 },200);
 //function to (re)initialize UI
 function initUI(){
-    I("dlText").textContent="";
-    I("ulText").textContent="";
-    I("pingText").textContent="";
-    I("jitText").textContent="";
-    I("ip").textContent="";
-    I("progress").style.width="";
+    for (const i of [1,2]) {
+        I("dlText" + i).textContent="";
+        I("ulText" + i).textContent="";
+        I("pingText" + i).textContent="";
+        I("jitText" + i).textContent="";
+        I("ip" + i).textContent="";
+        I("progress" + i).style.width="";
+    }
 }
 
 </script>
@@ -316,34 +349,66 @@ function initUI(){
 </nav>
 <article id="main">
     <div id="startStopBtn" onclick="startStop()"></div>
-    <div id="test">
-        <div id="progressBar"><div id="progress"></div></div>
+    <div class="test">
+        <div><h3>Verbindung ins Internet</h3></div>
+        <div class="progressBar"><div id="progress1" class="progress"></div></div>
         <div class="testGroup">
             <div class="testArea">
                 <div class="testName">Download</div>
-                <div id="dlText" class="meterText"></div>
+                <div id="dlText1" class="meterText dlText"></div>
                 <div class="unit">Mbps</div>
             </div>
             <div class="testArea">
                 <div class="testName">Upload</div>
-                <div id="ulText" class="meterText"></div>
+                <div id="ulText1" class="meterText ulText"></div>
                 <div class="unit">Mbps</div>
             </div>
         </div>
         <div class="testGroup">
             <div class="testArea">
                 <div class="testName">Ping</div>
-                <div id="pingText" class="meterText"></div>
+                <div id="pingText1" class="meterText pingText"></div>
                 <div class="unit">ms</div>
             </div>
             <div class="testArea">
                 <div class="testName">Jitter</div>
-                <div id="jitText" class="meterText"></div>
+                <div id="jitText1" class="meterText jitText"></div>
                 <div class="unit">ms</div>
             </div>
         </div>
-        <div id="ipArea">
-            IP Address: <span id="ip"></span>
+        <div id="ipArea1">
+            IP Address: <span id="ip1"></span>
+        </div>
+    </div>
+    <div class="test">
+        <div><h3>Verbindung in die Stusta</h3></div>
+        <div class="progressBar"><div id="progress2" class="progress"></div></div>
+        <div class="testGroup">
+            <div class="testArea">
+                <div class="testName">Download</div>
+                <div id="dlText2" class="meterText dlText"></div>
+                <div class="unit">Mbps</div>
+            </div>
+            <div class="testArea">
+                <div class="testName">Upload</div>
+                <div id="ulText2" class="meterText ulText"></div>
+                <div class="unit">Mbps</div>
+            </div>
+        </div>
+        <div class="testGroup">
+            <div class="testArea">
+                <div class="testName">Ping</div>
+                <div id="pingText2" class="meterText pingText"></div>
+                <div class="unit">ms</div>
+            </div>
+            <div class="testArea">
+                <div class="testName">Jitter</div>
+                <div id="jitText2" class="meterText jitText"></div>
+                <div class="unit">ms</div>
+            </div>
+        </div>
+        <div id="ipArea2">
+            IP Address: <span id="ip2"></span>
         </div>
     </div>
 </article>
