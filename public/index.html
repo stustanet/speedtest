@@ -253,9 +253,8 @@ footer a {
 function I(id){return document.getElementById(id);}
 
 // see doc.md
-
-var server1 = "http://extern.speedtest.stustanet.de/" //extern
-var server2 = "http://intern.speedtest.stustanet.de/" //intern
+var server1 = "//extern.speedtest.stustanet.de/"; //extern
+var server2 = "//intern.speedtest.stustanet.de/"; //intern
 var params = {
     1: {
         url_dl: server1 + "dl",
@@ -278,12 +277,12 @@ var nrTests = 2;
 var testServer = 1;
 var serverChanged = false;
 function startStop(){
+    initUI();
     if(w!=null){
         //speedtest is running, abort
         w.postMessage('abort');
         w=null;
         I("startStopBtn").className="";
-        initUI();
     }else{
         //test is not running, begin
         testServer = 1;
