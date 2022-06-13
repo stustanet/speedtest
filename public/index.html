@@ -252,9 +252,13 @@ footer a {
 <script type="text/javascript">
 function I(id){return document.getElementById(id);}
 
+let ipv = '';
+if (window.location.href.includes("v4")) ipv = "v4."
+if (window.location.href.includes("v6")) ipv = "v6."
+var server1 = "//" + ipv + "intern.speedtest.stustanet.de/"; //intern
+var server2 = "//" + ipv + "extern.speedtest.stustanet.de/"; //extern
+
 // see doc.md
-var server1 = "//extern.speedtest.stustanet.de/"; //extern
-var server2 = "//intern.speedtest.stustanet.de/"; //intern
 var params = {
     1: {
         url_dl: server1 + "dl",
@@ -344,12 +348,22 @@ function initUI(){
 <nav id="top-bar">
     <div class="logo"><a href="https://stustanet.de/" title="To Homepage"></a></div>
     <a href="/"><h1>StuStaNet Speedtest</h1></a>
-    <div class="filler"></div>
+    <div class="filler">
+        <a href="//v4.speedtest.stustanet.de">Force IPv4 </a>|
+        <a href="//v6.speedtest.stustanet.de">Force IPv6&emsp;</a>
+    <br>
+        <a id="http">Use HTTP </a>|
+        <a id="https">Use HTTPS</a>
+    <script>
+        document.getElementById("http").href = "http://" + new URL(window.location).host;
+        document.getElementById("https").href = "https://" + new URL(window.location).host;
+    </script>
+    </div>
 </nav>
 <article id="main">
     <div id="startStopBtn" onclick="startStop()"></div>
     <div class="test">
-        <div><h3>Verbindung ins Internet</h3></div>
+        <div><h3>Connection to the StuStaNet</h3></div>
         <div class="progressBar"><div id="progress1" class="progress"></div></div>
         <div class="testGroup">
             <div class="testArea">
@@ -380,7 +394,7 @@ function initUI(){
         </div>
     </div>
     <div class="test">
-        <div><h3>Verbindung in die Stusta</h3></div>
+        <div><h3>Connection to the Internet</h3></div>
         <div class="progressBar"><div id="progress2" class="progress"></div></div>
         <div class="testGroup">
             <div class="testArea">
